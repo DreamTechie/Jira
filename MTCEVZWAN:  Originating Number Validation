@@ -1,0 +1,35 @@
+import com.opensymphony.workflow.InvalidInputException;
+import com.onresolve.jira.groovy.user.FormField
+
+
+//This is the customfield ID to be used in the Test Environment
+FormField Originating_Number = getFieldById ("customfield_12306")
+
+//This is the customfield ID to be used in the Prod Environment
+//FormField Originating_Number = getFieldById ("customfield_12414")
+
+
+Originating_Number.clearError()
+
+String Originating_Number_Value = (String) Originating_Number.getValue()
+
+if (Originating_Number_Value == null) {Originating_Number_Value = '123'}
+
+else {}
+
+if(Originating_Number_Value.length() == 10){
+
+    if (Originating_Number_Value.isBigInteger()) {
+        
+        Originating_Number.clearError()
+        
+		} else {
+
+         Originating_Number.setError("Originating number must be exactly ten digits with no spaces, alpha characters, or extra characters.")
+         
+		}
+}   
+
+else {Originating_Number.setError("Originating number must be exactly ten digits with no spaces, alpha characters, or extra characters.")
+     }
+    
