@@ -1,0 +1,42 @@
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.security.roles.ProjectRoleManager
+import groovy.time.TimeCategory
+import java.util.Date
+import com.atlassian.jira.issue.Issue
+import com.atlassian.jira.issue.IssueManager
+import com.atlassian.jira.issue.CustomFieldManager
+import com.atlassian.jira.issue.fields.CustomField
+import java.text.SimpleDateFormat
+import com.opensymphony.workflow.InvalidInputException;
+import com.onresolve.jira.groovy.user.FormField
+import java.sql.Timestamp
+import com.atlassian.jira.timezone.TimeZoneManager
+
+
+String issueId = underlyingIssue?.id
+
+if (issueId == null) {
+        //This is the customfield ID to be used in the Test Environment
+    	def Failed_Call_Date_Time = getFieldById("customfield_12107")
+		
+    	
+    	//This is the customfield ID to be used in the Prod Environment
+    	//def Failed_Call_Date_Time = getFieldById("customfield_12423")
+    
+    
+        def User_TimeZone = ComponentAccessor.getComponent(TimeZoneManager).getLoggedInUserTimeZone().getProperties()['lastRule'].getProperties()['ID'].toString()
+
+        String User_TimeZone_Value = User_TimeZone
+
+        if (User_TimeZone == "America/Chicago") {
+
+
+            }
+
+        else {
+
+            Failed_Call_Date_Time.setError("User Time Zone is currently set to = " + User_TimeZone_Value + ".  Failed Call Date/Time must be entered as Central Time.  Please adjust the time entered accordingly.")
+        }
+	}
+
+else {}
