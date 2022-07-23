@@ -1,0 +1,81 @@
+import com.opensymphony.workflow.InvalidInputException;
+import com.onresolve.jira.groovy.user.FormField
+
+
+//This is the customfield ID to be used in the Test Environment
+FormField Originating_MDN = getFieldById ("customfield_12301")
+
+//This is the customfield ID to be used in the Prod Environment
+//FormField Originating_MDN = getFieldById ("customfield_12412")
+
+
+Originating_MDN.clearError()
+
+String Originating_MDN_Value = (String) Originating_MDN.getValue()
+
+if (Originating_MDN_Value == null) {Originating_MDN_Value = '123'}
+
+else {}
+
+if(Originating_MDN_Value.length() == 10){
+
+   if (Originating_MDN_Value.isBigInteger()) {
+        
+       Originating_MDN.clearError()
+        
+	} else {
+
+        Originating_MDN.setError("MDN must be exactly ten digits with no spaces, alpha characters, or extra characters.")
+    
+    
+   	}
+}   
+
+else {
+    
+    Originating_MDN.setError("MDN must be exactly ten digits with no spaces, alpha characters, or extra characters.")
+    
+     }
+    
+
+//These are the customfield ID to be used in the Test Environment
+def Trouble_Ticket_Type = getFieldById ("customfield_12106")
+def Device_MDN = getFieldById ("customfield_12301")
+def Problem_Type = getFieldById ("customfield_12300")
+
+//These are the customfield ID to be used in the Prod Environment
+//def Trouble_Ticket_Type = getFieldById ("customfield_12409")
+//def Device_MDN = getFieldById ("customfield_12412")
+//def Problem_Type = getFieldById ("customfield_12410")
+
+
+def Summary_Field = getFieldByName ("Summary")
+
+
+String pulltype = (String) Trouble_Ticket_Type.getValue()
+
+String Prob_type = (String) Problem_Type.getValue()
+
+String MDN_Val = (String) Device_MDN.getValue()
+
+def Summary_Set_Value = (Prob_type + " - " + MDN_Val)
+
+
+if (Prob_type != null && MDN_Val != null){
+            if (pulltype == "Call Processing Issue") { 
+
+                Summary_Field.setFormValue(Summary_Set_Value)           
+
+            }
+
+
+            else {
+
+                Summary_Field.setFormValue("")   
+            }
+
+}
+
+else {
+    
+}
