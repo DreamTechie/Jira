@@ -1,0 +1,54 @@
+import com.onresolve.jira.groovy.user.FormField
+import com.atlassian.jira.component.ComponentAccessor
+import com.onresolve.jira.groovy.user.FieldBehaviours
+import static com.atlassian.jira.issue.IssueFieldConstants.*
+import groovy.transform.BaseScript
+import com.atlassian.jira.issue.fields.screen.*
+    
+import com.atlassian.jira.issue.Issue
+import com.atlassian.jira.issue.IssueManager
+import com.atlassian.jira.issue.CustomFieldManager
+import com.atlassian.jira.issue.fields.CustomField
+import com.opensymphony.workflow.InvalidInputException;
+import com.onresolve.jira.groovy.user.FormField
+
+FormField Issue_Type_Variable = getFieldByName ("Issue Type")
+
+String pulltype = (String) Issue_Type_Variable.getValue()
+
+getFieldByName ("Issue Type").setDescription("Test message to see if this is working.")
+
+if (pulltype == "10004") 
+
+	{
+     	getFieldByName ("Issue Type").setDescription("<div class=\"aui-message aui-message-info\"><p><b>Trouble Tickets should only be opened for something that worked previously, but is currently not working." + "</b></div>" )
+    }
+
+else if (pulltype == "10200") 
+
+	{
+		getFieldByName ("Issue Type").setDescription("<div class=\"aui-message aui-message-info\"><p><b>Engineering Support Requests should be opened for smaller requests such as SIM/MDN requests or swaps, IP Address Request, IP Trace Request, RMA Request (Inventory), Tool Access Request, update existing VPN, etc. that can normally be completed in less than a week.  NOTE:  If something is broken/not working, please open a “Bug” ticket." + "</b></div>" )
+    }
+
+else if (pulltype == "11200") 
+
+	{
+		getFieldByName ("Issue Type").setDescription("<div class=\"aui-message aui-message-info\"><p><b>Projects should be created for any new elements, technology, features, proof of concepts, etc. that are going through the lab, and would normally take weeks to months depending on the complexity." + "</b></div>" )
+    }
+
+else if (pulltype == "10000") 
+
+	{
+		getFieldByName ("Issue Type").setDescription("<div class=\"aui-message aui-message-info\"><p><b>Epics and Stories should only be used for Software Releases." + "</b></div>" )
+    }
+
+else if (pulltype == "10001") 
+
+	{
+		getFieldByName ("Issue Type").setDescription("<div class=\"aui-message aui-message-info\"><p><b>Epics and Stories should only be used for Software Releases." + "</b></div>" )
+    }
+
+else 
+	{
+    	getFieldByName ("Issue Type").setDescription(null)
+     }
