@@ -1,0 +1,7 @@
+import com.opensymphony.workflow.InvalidInputException;
+import com.onresolve.jira.groovy.user.FormField
+
+issue.getParentObject().getStatus().name != "Done"
+
+!("Done"==(issue.getParentObject().getStatus()))
+(issue.getParentObject().getStatus().getName()=='Done')
