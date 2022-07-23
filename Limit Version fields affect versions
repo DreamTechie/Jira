@@ -1,0 +1,15 @@
+def field = getFieldById(getFieldChanged())
+
+def version = field.getValue() as Collection
+
+if (version.size() > 1)
+{
+    field.setValid(false)
+    field.setError("Version/s can only be one value.")
+}
+else
+
+{
+    field.setValid(true)
+    field.clearError()
+}
