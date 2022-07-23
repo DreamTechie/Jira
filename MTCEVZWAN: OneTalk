@@ -1,0 +1,82 @@
+import com.onresolve.jira.groovy.user.FormField
+import com.atlassian.jira.component.ComponentAccessor
+import com.onresolve.jira.groovy.user.FieldBehaviours
+import static com.atlassian.jira.issue.IssueFieldConstants.*
+import groovy.transform.BaseScript
+
+//These are the customfield ID to be used in the Test Environment
+FormField OneTalk_Field = getFieldById ("customfield_12309")
+FormField Trouble_Ticket_Type = getFieldById ("customfield_12106")
+
+
+//These are the customfield ID to be used in the Prod Environment
+//FormField OneTalk_Field = getFieldById ("customfield_12413")
+//FormField Trouble_Ticket_Type = getFieldById ("customfield_12409")
+
+
+String OneTalk_Val = (String) OneTalk_Field.getFormValue()
+String OneTalk_Val2 = (String) OneTalk_Field.getValue()
+
+
+String pulltype = (String) Trouble_Ticket_Type.getValue()
+if (pulltype == "Call Processing Issue") {
+
+
+                //This is the component ID for the Test Environment
+    			if (OneTalk_Val == "[12218]")
+                    
+                //This is the component ID for the Prod Environment
+                //if (OneTalk_Val == "[13027]")
+    
+                {
+                    OneTalk_Field.clearError()
+
+                }
+
+                //These are the component ID for the Test Environment
+				else if (OneTalk_Val == "[12217, 12219]") 
+                    
+				//These are the component ID for the Prod Environment
+				//else if (OneTalk_Val == "[13023, 13024]") 
+                
+                
+				{ 
+
+                    OneTalk_Field.clearError()
+                }
+
+
+                //These are the component ID for the Test Environment
+				else if (OneTalk_Val == "[12217, 12220]") 
+                
+				//These are the component ID for the Prod Environment
+				//else if (OneTalk_Val == "[13023, 13025]") 
+
+				{ 
+
+                    OneTalk_Field.clearError()
+                }
+
+
+                //These are the component ID for the Test Environment
+				else if (OneTalk_Val == "[12217, 12221]")
+                
+				//These are the component ID for the Test Environment
+				//else if (OneTalk_Val == "[13023, 13026]")
+                    
+				{ 
+
+                    OneTalk_Field.clearError()
+                }
+
+                else {
+
+                    OneTalk_Field.setError("You must enter a selection for both OneTalk fields.")
+                }
+	}
+
+else {
+    
+     OneTalk_Field.clearError()
+    
+	 }
