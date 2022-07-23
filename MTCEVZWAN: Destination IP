@@ -1,0 +1,63 @@
+import com.opensymphony.workflow.InvalidInputException;
+import com.onresolve.jira.groovy.user.FormField
+
+
+//This is the customfield ID to be used in the Test Environment
+FormField Destination_IP = getFieldById ("customfield_12303")
+
+
+//This is the customfield ID to be used in the Prod Environment
+//FormField Destination_IP = getFieldById ("customfield_12420")
+
+String Destination_IP_Value = Destination_IP.getValue()
+
+//This is the original Destination IP validation & error message that was based on IPv4, that is being replaced by validation for both IPv4 & IPv6
+
+
+        //boolean isIP = Destination_IP_Value.matches("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")
+
+        //String Error_Msg = "Please enter a valid IP address in the format of x.x.x.x"
+
+        //if (isIP) {
+
+        //    Destination_IP.clearError()
+
+        //}
+
+        //else {
+
+        //    Destination_IP.setError(Error_Msg)
+        //}
+
+
+
+
+//This is the new Destination IP validation & error message for both IPv4 & IPv6
+
+if (Destination_IP_Value == null) {Destination_IP_Value = 'NO_VALUE_ENTERED'}
+
+else {}
+
+
+boolean isIPv4 = Destination_IP_Value.matches("((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])")
+
+boolean isIPv6 = Destination_IP_Value.matches("(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))")
+
+String Error_Msg = "Please enter a valid IP address in either IPv4 or IPv6 format.  Do not include the network mask in this field."
+
+if (isIPv4) {
+
+		   Destination_IP.clearError()
+
+          }
+
+else if (isIPv6) {
+
+		   Destination_IP.clearError()
+
+          }
+
+else {
+
+      Destination_IP.setError(Error_Msg)
+     }
