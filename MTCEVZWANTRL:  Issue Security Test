@@ -1,0 +1,27 @@
+import com.onresolve.jira.groovy.user.FormField
+import com.atlassian.jira.component.ComponentAccessor
+import com.onresolve.jira.groovy.user.FieldBehaviours
+import static com.atlassian.jira.issue.IssueFieldConstants.*
+import groovy.transform.BaseScript
+import com.atlassian.jira.issue.fields.screen.*
+    
+import com.atlassian.jira.issue.Issue
+import com.atlassian.jira.issue.IssueManager
+import com.atlassian.jira.issue.CustomFieldManager
+import com.atlassian.jira.issue.fields.CustomField
+import com.opensymphony.workflow.InvalidInputException;
+import com.onresolve.jira.groovy.user.FormField
+
+FormField Security_Level_Variable = getFieldByName ("Security Level")
+
+Security_Level_Variable.setFormValue([10401])
+
+//String pulltype = (String) Security_Level_Variable.getValue()
+
+//if (Security_Level_Variable == -1)
+
+//{Security_Level_Variable.setError("Security Level cannot be left as 'None'.  If unsure, please select 'VZWAN Employees and Contractors'.")}
+
+//else
+    
+//{Security_Level_Variable.clearError()}
