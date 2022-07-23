@@ -1,0 +1,234 @@
+import com.onresolve.jira.groovy.user.FormField
+import com.atlassian.jira.component.ComponentAccessor
+import com.onresolve.jira.groovy.user.FieldBehaviours
+import static com.atlassian.jira.issue.IssueFieldConstants.*
+import groovy.transform.BaseScript
+
+
+String issueId = underlyingIssue?.id
+
+if (issueId == null) 
+
+	{
+        
+    }
+
+else {
+    
+    
+    
+    	//These are the customfield ID to be used in the Test Environment
+        FormField Trouble_Ticket_Type = getFieldById ("customfield_12106")
+        FormField Device_MDN = getFieldById ("customfield_12301")
+        FormField Originating_Number = getFieldById ("customfield_12306")
+        FormField Terminating_Number = getFieldById ("customfield_12111")
+        FormField Failed_Call_Date_Time = getFieldById ("customfield_12107")
+        FormField AccessNetworkType = getFieldById ("customfield_12113")
+        FormField Problem_Type = getFieldById ("customfield_12300")
+        FormField OneTalk_Field = getFieldById ("customfield_12309")
+        FormField Destination_Port = getFieldById ("customfield_12311")
+        FormField Destination_POD = getFieldById ("customfield_12310")
+        FormField Source_IP = getFieldById ("customfield_12302")
+        FormField Destination_IP = getFieldById ("customfield_12303")
+        FormField VRF = getFieldById ("customfield_12304")
+        FormField POD = getFieldById ("customfield_12305")
+		FormField SupportCase = getFieldById ("customfield_12720")
+    	FormField ISSUEDATE = getFieldById ("customfield_12721")
+    
+
+
+
+        //These are the customfield ID to be used in the Prod Environment
+        //FormField Trouble_Ticket_Type = getFieldById ("customfield_12409")
+        //FormField Device_MDN = getFieldById ("customfield_12412")
+        //FormField Originating_Number = getFieldById ("customfield_12414")
+        //FormField Terminating_Number = getFieldById ("customfield_12415")
+        //FormField Failed_Call_Date_Time = getFieldById ("customfield_12423")
+        //FormField AccessNetworkType = getFieldById ("customfield_12411")
+        //FormField Problem_Type = getFieldById ("customfield_12410")
+        //FormField OneTalk_Field = getFieldById ("customfield_12413")
+        //FormField Destination_Port = getFieldById ("customfield_12421")
+        //FormField Destination_POD = getFieldById ("customfield_12422")
+        //FormField Source_IP = getFieldById ("customfield_12417")
+        //FormField Destination_IP = getFieldById ("customfield_12420")
+        //FormField VRF = getFieldById ("customfield_12419")
+        //FormField POD = getFieldById ("customfield_12418")
+
+
+        FormField Affects_Version = getFieldByName ("Affects Version/s")
+        FormField Fix_Version = getFieldByName ("Fix Version/s")
+        FormField Priority_Field = getFieldByName ("Priority")
+        FormField Reporter_Name = getFieldByName ("Reporter")
+        FormField Summary_Field = getFieldByName ("Summary")
+        FormField Labels_Field = getFieldByName ("Labels")
+        FormField Due_Date_Field = getFieldByName ("Due Date")
+
+
+        def assignee = getFieldById(ASSIGNEE)
+        def reporter = getFieldById(REPORTER)
+        def description_field = getFieldById("description")
+        def Component_Field = getFieldById(COMPONENTS)
+
+
+        Summary_Field.clearError()
+        Trouble_Ticket_Type.clearError()
+        Priority_Field.setFormValue("3")
+
+
+        description_field.setRequired(true)
+
+        // description_field.setError("Issue ID = " + Issue_ID2)
+
+
+        String pulltype = (String) Trouble_Ticket_Type.getValue()
+        if (pulltype == "Call Processing Issue") { 
+
+            Device_MDN.setHidden(false).setRequired(true)
+            Originating_Number.setHidden(false).setRequired(true)
+            Terminating_Number.setHidden(false).setRequired(true)
+            Failed_Call_Date_Time.setHidden(false).setRequired(true)
+            AccessNetworkType.setHidden(false).setRequired(true)
+            Problem_Type.setHidden(false).setRequired(true)
+            Priority_Field.setHidden(true)
+            Source_IP.setHidden(true).setRequired(false)
+            Destination_IP.setHidden(true).setRequired(false)
+            VRF.setHidden(true)
+            POD.setHidden(true)
+            Affects_Version.setHidden(true).setRequired(false)
+            Fix_Version.setHidden(true)
+            Labels_Field.setHidden(true)
+            Due_Date_Field.setHidden(true)
+            assignee.setHidden(true)
+            OneTalk_Field.setHidden(false).setRequired(true)
+            Summary_Field.setHidden(true)
+            Destination_POD.setHidden(true)
+            Destination_Port.setHidden(true)
+            SupportCase.setHidden(true)
+
+            getFieldById("issuelinks").setRequired(false)
+            Source_IP.clearError()
+            Destination_IP.clearError()
+
+
+
+
+
+
+        }
+
+        else if (pulltype == "Software Release Defect") { 
+
+            Device_MDN.setHidden(true).setRequired(false)
+            Originating_Number.setHidden(true).setRequired(false)
+            Terminating_Number.setHidden(true).setRequired(false)
+            Failed_Call_Date_Time.setHidden(true).setRequired(false)
+            AccessNetworkType.setHidden(true).setRequired(false)
+            Problem_Type.setHidden(true).setRequired(false)
+            Priority_Field.setHidden(false)
+            Source_IP.setHidden(true).setRequired(false)
+            Destination_IP.setHidden(true).setRequired(false)
+            VRF.setHidden(true)
+            POD.setHidden(true)
+            Affects_Version.setHidden(false).setRequired(true)
+            Fix_Version.setHidden(false)
+            Labels_Field.setHidden(false)
+            Due_Date_Field.setHidden(false)
+            assignee.setHidden(false)
+            OneTalk_Field.setHidden(true).setRequired(false)
+            Summary_Field.setHidden(false)
+            Destination_POD.setHidden(true)
+            Destination_Port.setHidden(true)
+            SupportCase.setHidden(true)
+
+
+
+
+
+
+            getFieldById("issuelinks").setRequired(true)
+            Source_IP.clearError()
+            Destination_IP.clearError()
+            OneTalk_Field.clearError()
+
+            Device_MDN.clearError()
+            Originating_Number.clearError()
+            Terminating_Number.clearError()
+            Failed_Call_Date_Time.clearError()
+
+
+
+        }
+
+        else if (pulltype == "Transport/Connectivity Issue") { 
+            Device_MDN.setHidden(true).setRequired(false)
+            Originating_Number.setHidden(true).setRequired(false)
+            Terminating_Number.setHidden(true).setRequired(false)
+            Failed_Call_Date_Time.setHidden(true).setRequired(false)
+            AccessNetworkType.setHidden(true).setRequired(false)
+            Problem_Type.setHidden(true).setRequired(false)
+            Priority_Field.setHidden(false)
+            Source_IP.setHidden(false).setRequired(true)
+            Destination_IP.setHidden(false).setRequired(true)
+            VRF.setHidden(false)
+            POD.setHidden(false)
+            OneTalk_Field.setHidden(true).setRequired(false)
+            Summary_Field.setHidden(false)
+            Destination_POD.setHidden(false)
+            Destination_Port.setHidden(false)
+            SupportCase.setHidden(false)
+
+
+
+            Affects_Version.setRequired(false)
+            getFieldById("issuelinks").setRequired(false)
+            OneTalk_Field.clearError()
+
+
+            Device_MDN.clearError()
+            Originating_Number.clearError()
+            Terminating_Number.clearError()
+            Failed_Call_Date_Time.clearError()
+
+
+	       }
+
+        else {
+            Device_MDN.setHidden(true).setRequired(false)
+            Originating_Number.setHidden(true).setRequired(false)
+            Terminating_Number.setHidden(true).setRequired(false)
+            Failed_Call_Date_Time.setHidden(true).setRequired(false)
+            AccessNetworkType.setHidden(true).setRequired(false)
+            Problem_Type.setHidden(true).setRequired(false)
+            Priority_Field.setHidden(false)
+            Source_IP.setHidden(true).setRequired(false)
+            Destination_IP.setHidden(true).setRequired(false)
+            VRF.setHidden(true)
+            POD.setHidden(true)
+            Labels_Field.setHidden(false)
+            Due_Date_Field.setHidden(false)
+            assignee.setHidden(false)
+            OneTalk_Field.setHidden(true).setRequired(false)
+            Summary_Field.setHidden(false)
+            Destination_POD.setHidden(true)
+            Destination_Port.setHidden(true)
+            SupportCase.setHidden(true)
+
+
+            Affects_Version.setRequired(false)
+            getFieldById("issuelinks").setRequired(false)
+            Source_IP.clearError()
+            Destination_IP.clearError()
+            OneTalk_Field.clearError()
+
+
+            Device_MDN.clearError()
+            Originating_Number.clearError()
+            Terminating_Number.clearError()
+            Failed_Call_Date_Time.clearError()
+    
+			}
+    
+    
+    
+    
+}
