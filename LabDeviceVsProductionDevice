@@ -1,0 +1,31 @@
+    //Temp Code to limit Device type with locations
+/*		def optionsManager = ComponentAccessor.optionsManager
+		def customFieldManager = ComponentAccessor.customFieldManager
+
+		def formFieldA = Lab_Vs_Production_Device
+        def formFieldB = getFieldById ("customfield_12801")
+        def map = [
+           'Lab Device':['C31-RFE-1','C31-RFE-2','C31-RFE-3','C32-RFE-1','C32-RFE-2','C32-RFE-3','C33-RFE-1','C33-RFE-2','C33-RFE-3','C34-RFE-1','C34-RFE-2','C34-RFE-3',
+                    'M47-RFE-1','M47-RFE-2','M48-RFE-1','M48-RFE-2','M50-RFE-1','M50-RFE-2','M51-RFE-1','M51-RFE-2',
+                    'AAA-2-RFE-1','AAA-2-RFE-2','AAA-2-RFE-3','AAA-3-RFE-1','AAA-3-RFE-2','AAA-3-RFE-3','AAA-4-RFE-1','AAA-4-RFE-2','AAA-4-RFE-3','AAA-4-RFE-4',
+                    'Chamber 1','Chamber 2','Chamber 3','Chamber 4','Chamber 5'],
+           'Production Device':['Alpharetta, GA','Bellevue, WA','Birmingham, AL','Branchburg, NJ','Hickory Hills, IL','Westlake, TX']
+        ]
+
+        def cfFieldB = customFieldManager.getCustomFieldObject(formFieldB.fieldId)
+        def config = cfFieldB.getRelevantConfig(issueContext)
+        def allOptions = optionsManager.getOptions(config)
+
+        def optionsToAllow = allOptions.findAll{ option->
+		map[formFieldA.value.toString()].contains(option.value)
+		}
+
+        formFieldB.setFieldOptions(optionsToAllow)*/
+
+//End Temp Code
+
+
+
+-------
+
+New problem type for "Cannot Originate AND Receive to/from any number" (New Field add on for new Problem Type)
