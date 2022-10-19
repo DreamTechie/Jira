@@ -1,0 +1,1061 @@
+import com.onresolve.jira.groovy.user.FormField
+import com.atlassian.jira.component.ComponentAccessor
+import com.onresolve.jira.groovy.user.FieldBehaviours
+import static com.atlassian.jira.issue.IssueFieldConstants.*
+import groovy.transform.BaseScript
+import com.atlassian.jira.issue.fields.screen.*
+    
+import groovy.time.TimeCategory
+import java.util.Calendar
+import java.util.Date
+import com.atlassian.jira.issue.Issue
+import com.atlassian.jira.issue.IssueManager
+import com.atlassian.jira.issue.CustomFieldManager
+import com.atlassian.jira.issue.fields.CustomField
+import java.text.SimpleDateFormat
+import com.opensymphony.workflow.InvalidInputException;
+import com.onresolve.jira.groovy.user.FormField
+import java.sql.Timestamp
+import com.atlassian.jira.timezone.TimeZoneManager
+import java.util.TimeZone;
+
+
+String issueId = underlyingIssue?.id
+
+// long issueId = 0
+
+
+//These are the customfield ID to be used in the Test Environment
+FormField Trouble_Ticket_Type = getFieldById ("customfield_12106")
+FormField Device_MDN = getFieldById ("customfield_12301")
+FormField Originating_Number = getFieldById ("customfield_12306")
+FormField Terminating_Number = getFieldById ("customfield_12111")
+FormField Failed_Call_Date_Time = getFieldById ("customfield_12107")
+FormField AccessNetworkType = getFieldById ("customfield_12113")
+FormField Problem_Type = getFieldById ("customfield_12300")
+FormField OneTalk_Field = getFieldById ("customfield_12309")
+FormField Destination_Port = getFieldById ("customfield_12311")
+FormField Destination_POD = getFieldById ("customfield_12310")
+FormField Source_IP = getFieldById ("customfield_12302")
+FormField Destination_IP = getFieldById ("customfield_12303")
+FormField VRF = getFieldById ("customfield_12304")
+FormField POD = getFieldById ("customfield_12305")
+FormField Support_Case = getFieldById ("customfield_12720")
+FormField SPECIFIC_TO_A_SINGLE_ISSUE_CASE = getFieldById ("customfield_12732")
+FormField EASILY_REPRODUCED = getFieldById ("customfield_12723")
+FormField OCCURS_WHEN_EXECUTED_MANUALLY = getFieldById ("customfield_12724")
+FormField FIRST_TIME_ISSUE_OCCURRED = getFieldById ("customfield_12730")
+FormField ISSUE_START_DATE_AND_TIME = getFieldById ("customfield_12731")
+FormField FREQUENCY_OF_OCCURRENCE = getFieldById ("customfield_12725")
+FormField ISSUE_END_DATE_AND_TIME = getFieldById ("customfield_12733")
+FormField Access_Start_Date_Time = getFieldById("customfield_12806")
+FormField Access_End_Date_Time = getFieldById("customfield_12807")
+FormField NameofPerson = getFieldById("customfield_12808")
+FormField PhoneNumber = getFieldById("customfield_12822")
+FormField Email =  getFieldById("customfield_12810")
+FormField ESR_Vendor_Group = getFieldById("customfield_12811")
+FormField Room_Rack_Location = getFieldById("customfield_12812")
+FormField PO = getFieldById("customfield_12817")
+FormField Equipment = getFieldById("customfield_12816")
+FormField Preferred_Date = getFieldById("customfield_12815")
+FormField Source_Location = getFieldById("customfield_12813")
+FormField Destination_Location = getFieldById("customfield_12814")
+FormField Install_Date = getFieldById("customfield_12818")
+FormField Vendor_Group = getFieldById("customfield_10100")
+FormField MR_Equip_List = getFieldById("customfield_12821")
+
+
+//These are the customfield ID to be used in the Prod Environment
+//FormField Trouble_Ticket_Type = getFieldById ("customfield_12409")
+//FormField Device_MDN = getFieldById ("customfield_12412")
+//FormField Originating_Number = getFieldById ("customfield_12414")
+//FormField Terminating_Number = getFieldById ("customfield_12415")
+//FormField Failed_Call_Date_Time = getFieldById ("customfield_12423")
+//FormField AccessNetworkType = getFieldById ("customfield_12411")
+//FormField Problem_Type = getFieldById ("customfield_12410")
+//FormField OneTalk_Field = getFieldById ("customfield_12413")
+//FormField Destination_Port = getFieldById ("customfield_12421")
+//FormField Destination_POD = getFieldById ("customfield_12422")
+//FormField Source_IP = getFieldById ("customfield_12417")
+//FormField Destination_IP = getFieldById ("customfield_12420")
+//FormField VRF = getFieldById ("customfield_12419")
+//FormField POD = getFieldById ("customfield_12418")
+//FormField Support_Case = getFieldById ("customfield_12720")
+//FormField SPECIFIC_TO_A_SINGLE_ISSUE_CASE = getFieldById ("customfield_12803")
+//FormField EASILY_REPRODUCED = getFieldById ("customfield_12804")
+//FormField OCCURS_WHEN_EXECUTED_MANUALLY = getFieldById ("customfield_12805")
+//FormField FIRST_TIME_ISSUE_OCCURRED = getFieldById ("customfield_12800")
+//FormField ISSUE_START_DATE_AND_TIME = getFieldById ("customfield_12801")
+//FormField FREQUENCY_OF_OCCURRENCE = getFieldById ("customfield_12806")
+//FormField ISSUE_END_DATE_AND_TIME = getFieldById ("customfield_12802")
+
+
+FormField Affects_Version = getFieldByName ("Affects Version/s")
+FormField Fix_Version = getFieldByName ("Fix Version/s")
+FormField Priority_Field = getFieldByName ("Priority")
+FormField Reporter_Name = getFieldByName ("Reporter")
+FormField Summary_Field = getFieldByName ("Summary")
+FormField Labels_Field = getFieldByName ("Labels")
+FormField Due_Date_Field = getFieldByName ("Due Date")
+
+
+def assignee = getFieldById(ASSIGNEE)
+def reporter = getFieldById(REPORTER)
+def description_field = getFieldById("description")
+def Component_Field = getFieldById(COMPONENTS)
+def Attachment_Field = getFieldById(ATTACHMENT)
+
+Summary_Field.clearError()
+Trouble_Ticket_Type.clearError()
+Priority_Field.setFormValue("3")
+
+
+description_field.setRequired(true)
+
+BigInteger CurrentSysTimeInMilliSeconds = (BigInteger) System.currentTimeMillis()
+
+BigDecimal CurrentSysTimeInMilliSeconds_Converted_to_Days_UnRounded = (BigDecimal) CurrentSysTimeInMilliSeconds/86400000
+
+BigInteger CurrentSysTimeInMilliSeconds_Converted_to_Days_Rounded = CurrentSysTimeInMilliSeconds_Converted_to_Days_UnRounded.toBigInteger().intValueExact()
+
+BigInteger CurrentSysTimeInMilliSeconds_at_Midnight_Current_Day = CurrentSysTimeInMilliSeconds_Converted_to_Days_Rounded * 86400000
+
+def tz = TimeZone.getTimeZone("America/Chicago").inDaylightTime( new Date() );
+
+def TimeZoneOffSet = (BigInteger) 0
+
+if (tz == true)
+	{
+       TimeZoneOffSet = (BigInteger) 18000000
+    }
+
+else
+	{
+        TimeZoneOffSet = (BigInteger) 21600000
+    }
+
+BigInteger CurrentTimeMillis_For_Compare_to_Maintenance_Window = CurrentSysTimeInMilliSeconds - CurrentSysTimeInMilliSeconds_at_Midnight_Current_Day - TimeZoneOffSet
+
+
+
+//This is copied code to hide a tab
+//def issueType = getIssueContext().getIssueType().getName()
+
+//FieldScreenTab tab = getFieldScreen().tabs.find {
+//    return (it.name.toLowerCase() == "test")
+//}
+
+//if (issueType == "test") {
+//    if (tab) {
+//        hideTab(tab)
+//    }
+//} else {
+//    showTab(tab)
+//}
+
+
+//This is project specific code to hide my tabs
+
+FieldScreenTab CallProcessingTab = getFieldScreen().tabs.find {
+    return (it.name.toLowerCase() == "call processing issue") }
+
+FieldScreenTab TransportTab = getFieldScreen().tabs.find {
+    return (it.name.toLowerCase() == "transport issue") }
+
+
+
+//This is the end of the code to hide tabs
+
+
+String pulltype = (String) Trouble_Ticket_Type.getValue()
+
+if (pulltype == "Software Release Defect") 
+
+	{
+        //This is the custom field ID for the test environment
+        getFieldById ("customfield_12106").setDescription(null)
+        
+        //This is the custom field ID for the prod environment
+        //getFieldById ("customfield_12409").setDescription(null)
+    }
+
+else {
+    
+            //This is the actual script for the 1st Maintenance Window from 12 pm to 1 pm CT
+            //if (issueId == null && (CurrentTimeMillis_For_Compare_to_Maintenance_Window) >= 43200000 && (CurrentTimeMillis_For_Compare_to_Maintenance_Window) <= 46800000) 
+
+            //This is the script for to be for Maintenance Window Testing, & applies to the window from 8:00 am to 11 pm CT
+            if (issueId == null && (CurrentTimeMillis_For_Compare_to_Maintenance_Window) >= 28800000  && (CurrentTimeMillis_For_Compare_to_Maintenance_Window) <= 82800000) 
+
+
+                {
+
+                  //getFieldById ("customfield_12106").setDescription("<div class=\"aui-message warning\"><p class=\"title\" style=\"font-size:18px;\" <strong>Maintenance Window Warning</strong> </font> <span class=\"aui-icon icon-warning\"></span></p><p><b>You are attempting to create a trouble ticket during a maintenance period (There is a Lab Maintenance Window from 12 pm to 1 pm CT).  If the issue occurred during the maintenance window, please retest after the maintenance window closes and ensure the issue still exists before opening a trouble ticket.  Otherwise, please continue with opening this ticket." + "</b></div>" )
+                    getFieldById ("customfield_12106").setDescription("<div class=\"aui-message aui-message-warning\"><p class=\"title\" style=\"font-size:18px;\" <strong>Maintenance Window Warning</strong> </font> <span class=\"aui-icon icon-warning\"></span></p><p><b>You are attempting to create a trouble ticket during a maintenance period (There is a Lab Maintenance Window from 12 pm to 1 pm CT).  If the issue occurred during the maintenance window, please retest after the maintenance window closes and ensure the issue still exists before opening a trouble ticket.  Otherwise, please continue with opening this ticket." + "</b></div>" )
+
+                 }
+
+            //This is the script to check for the 2nd Maintenance Window from 5 pm to 11 pm CT
+            else if (issueId == null && (CurrentTimeMillis_For_Compare_to_Maintenance_Window) >= 61200000  && (CurrentTimeMillis_For_Compare_to_Maintenance_Window) < 82800000) 
+
+                {
+
+                  //getFieldById ("customfield_12106").setDescription("<div class=\"aui-message warning\"><p class=\"title\"><span class=\"aui-icon icon-warning\"></span></p><p><b>You are attempting to create a trouble ticket during a maintenance period (There is a Lab Maintenance Window from 5 pm to 11 pm CT).  If the issue occurred during the maintenance window, please retest after the maintenance window closes and ensure the issue still exists before opening a trouble ticket.  Otherwise, please continue with opening this ticket." + "</b></p></div>" )
+                    getFieldById ("customfield_12106").setDescription("<div class=\"aui-message aui-message-warning\"><p class=\"title\"><span class=\"aui-icon icon-warning\"></span></p><p><b>You are attempting to create a trouble ticket during a maintenance period (There is a Lab Maintenance Window from 5 pm to 11 pm CT).  If the issue occurred during the maintenance window, please retest after the maintenance window closes and ensure the issue still exists before opening a trouble ticket.  Otherwise, please continue with opening this ticket." + "</b></p></div>" )
+                 }
+
+            else {}
+
+
+
+		}
+
+
+
+
+if (pulltype == "Call Processing Issue") { 
+	
+    Device_MDN.setHidden(false).setRequired(true)
+    Originating_Number.setHidden(false).setRequired(true)
+    Terminating_Number.setHidden(false).setRequired(true)
+    Failed_Call_Date_Time.setHidden(false).setRequired(true)
+    AccessNetworkType.setHidden(false).setRequired(true)
+    Problem_Type.setHidden(false).setRequired(true)
+    Priority_Field.setHidden(true).setRequired(false)
+    Source_IP.setHidden(true).setRequired(false)
+    Destination_IP.setHidden(true).setRequired(false)
+    VRF.setHidden(true).setRequired(false)
+    POD.setHidden(true).setRequired(false)
+    Affects_Version.setHidden(true).setRequired(false)
+    Fix_Version.setHidden(true).setRequired(false)
+    Labels_Field.setHidden(true).setRequired(false)
+    Due_Date_Field.setHidden(true).setRequired(false)
+    assignee.setHidden(true).setRequired(false)
+    OneTalk_Field.setHidden(false).setRequired(true)
+    Summary_Field.setHidden(true).setRequired(false)
+    Destination_POD.setHidden(true).setRequired(false)
+    Destination_Port.setHidden(true).setRequired(false)
+    Support_Case.setHidden(false).setRequired(false)
+    SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setHidden(true).setRequired(false)
+    EASILY_REPRODUCED.setHidden(true).setRequired(false)
+    OCCURS_WHEN_EXECUTED_MANUALLY.setHidden(true).setRequired(false)
+    FIRST_TIME_ISSUE_OCCURRED.setHidden(true).setRequired(false) 
+    ISSUE_START_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    ISSUE_END_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    FREQUENCY_OF_OCCURRENCE.setHidden(true).setRequired(false)
+    MR_Equip_List.setHidden(true).setRequired(false)
+
+    
+    showTab(CallProcessingTab)
+    hideTab(TransportTab)
+    
+    getFieldById(ATTACHMENT).setDescription(null)
+    Attachment_Field.setRequired(false)
+    
+    
+    if (issueId == null) {
+        
+        	assignee.setFormValue("-1")
+    		description_field.setFormValue("")
+        	
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+
+        
+    }
+    else {
+        
+    }
+    //This is to set the component value to "NATT" & "Call Processing Issue".  The Component ID Values for Production are [13608,13363].  The Component ID Values for Test are [12767,12556]
+    Component_Field.setFormValue([12767,12556])
+    getFieldById("issuelinks").setRequired(false)
+    Source_IP.clearError()
+    Support_Case.clearError()
+    Destination_IP.clearError()
+    MR_Equip_List.clearError()
+    
+    Device_MDN.setFormValue(null)
+}
+
+else if (pulltype == "Software Release Defect") { 
+	
+    Device_MDN.setHidden(true).setRequired(false)
+    Originating_Number.setHidden(true).setRequired(false)
+    Terminating_Number.setHidden(true).setRequired(false)
+    Failed_Call_Date_Time.setHidden(true).setRequired(false)
+    AccessNetworkType.setHidden(true).setRequired(false)
+    Problem_Type.setHidden(true).setRequired(false)
+    Priority_Field.setHidden(false)
+    Source_IP.setHidden(true).setRequired(false)
+    Destination_IP.setHidden(true).setRequired(false)
+    VRF.setHidden(true).setRequired(false)
+    POD.setHidden(true).setRequired(false)
+    Affects_Version.setHidden(false).setRequired(true)
+    Fix_Version.setHidden(false)
+    Labels_Field.setHidden(false)
+    Due_Date_Field.setHidden(false)
+    assignee.setHidden(false)
+    OneTalk_Field.setHidden(true).setRequired(false)
+    Summary_Field.setHidden(false)
+    Destination_POD.setHidden(true).setRequired(false)
+    Destination_Port.setHidden(true).setRequired(false)
+    Support_Case.setHidden(true).setRequired(false)
+    SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setHidden(true).setRequired(false)
+    EASILY_REPRODUCED.setHidden(true).setRequired(false)
+    OCCURS_WHEN_EXECUTED_MANUALLY.setHidden(true).setRequired(false)
+    FIRST_TIME_ISSUE_OCCURRED.setHidden(true).setRequired(false) 
+    ISSUE_START_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    ISSUE_END_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    FREQUENCY_OF_OCCURRENCE.setHidden(true).setRequired(false)
+    MR_Equip_List.setHidden(true).setRequired(false)
+
+
+    
+    hideTab(CallProcessingTab)
+    hideTab(TransportTab)
+    
+    
+     if (issueId == null) {
+      assignee.setFormValue(reporter.getValue())
+      description_field.setFormValue("")
+    //This is to set the component value to "Software Release" & "Defect/Bug".  The Component ID Values for Production are [13831,13420].  The Component ID Values for Test are [12971, 12605]
+        Component_Field.setFormValue([12971, 12605])
+        Summary_Field.setFormValue(null)
+        
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+     }
+    else{}
+    
+    
+    getFieldById("issuelinks").setRequired(true)
+    Source_IP.clearError()
+    Destination_IP.clearError()
+    OneTalk_Field.clearError()
+    
+    Support_Case.clearError()
+    getFieldById(ATTACHMENT).setDescription(null)
+    Attachment_Field.setRequired(false)   
+    
+    Device_MDN.clearError()
+    Originating_Number.clearError()
+    Terminating_Number.clearError()
+    Failed_Call_Date_Time.clearError()
+    MR_Equip_List.clearError()
+    
+ 
+
+}
+
+else if (pulltype == "Transport/Connectivity Issue") { 
+	Device_MDN.setHidden(true).setRequired(false)
+    Originating_Number.setHidden(true).setRequired(false)
+    Terminating_Number.setHidden(true).setRequired(false)
+    Failed_Call_Date_Time.setHidden(true).setRequired(false)
+    AccessNetworkType.setHidden(true).setRequired(false)
+    Problem_Type.setHidden(true).setRequired(false)
+    Priority_Field.setHidden(false)
+    Source_IP.setHidden(false).setRequired(true)
+    Destination_IP.setHidden(false).setRequired(true)
+    VRF.setHidden(false)
+    POD.setHidden(false)
+    OneTalk_Field.setHidden(true).setRequired(false)
+    Summary_Field.setHidden(false)
+    Destination_POD.setHidden(false)
+    Destination_Port.setHidden(false)
+    Support_Case.setHidden(false).setRequired(false)
+    SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setHidden(true).setRequired(false)
+    EASILY_REPRODUCED.setHidden(true).setRequired(false)
+    OCCURS_WHEN_EXECUTED_MANUALLY.setHidden(true).setRequired(false)
+    FIRST_TIME_ISSUE_OCCURRED.setHidden(true).setRequired(false) 
+    ISSUE_START_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    ISSUE_END_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    FREQUENCY_OF_OCCURRENCE.setHidden(true).setRequired(false)
+    MR_Equip_List.setHidden(true).setRequired(false)
+
+    
+    Affects_Version.setRequired(false)
+    getFieldById("issuelinks").setRequired(false)
+    OneTalk_Field.clearError()
+    
+    
+    Device_MDN.clearError()
+    Originating_Number.clearError()
+    Terminating_Number.clearError()
+    Failed_Call_Date_Time.clearError()
+    MR_Equip_List.clearError()
+    
+    hideTab(CallProcessingTab)
+    showTab(TransportTab)
+    
+    Support_Case.clearError()
+    getFieldById(ATTACHMENT).setDescription(null)
+    Attachment_Field.setRequired(false)
+    
+     if (issueId == null) {
+         
+         description_field.setFormValue("DO NOT DELETE THE DATA FORMAT SHOWN BELOW.  SIMPLY ENTER THE REQUIRED INFORMATION IN THE APPROPRIATE PLACE." + " \n " +"---------------------"+ " \n " +"Description of the Issue: " + " \n " + "Date last known to be working: " + " \n " + "(If not working previously, please open an ESR via the Lab Confluence Homepage instead of submitting this trouble ticket.)" + " \n " + "Frequency the issue is reproduced? (Ex: Not working, Intermittent, Radio Failure): " + " \n " + "Is this a connectivity issue?")
+         //This is to set the component value to "Transport".  The Component ID Value for Production is [13869].  The Component ID Values for Test is [13004]
+	     Component_Field.setFormValue([13004])
+         Summary_Field.setFormValue(null)
+                 
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+     	}
+    
+    else {}
+    
+    }
+
+else if (pulltype == "Network Visibility Fabric Ticket") { 
+    
+	Device_MDN.setHidden(true).setRequired(false)
+    Originating_Number.setHidden(true).setRequired(false)
+    Terminating_Number.setHidden(true).setRequired(false)
+    Failed_Call_Date_Time.setHidden(true).setRequired(false)
+    AccessNetworkType.setHidden(true).setRequired(false)
+    Problem_Type.setHidden(true).setRequired(false)
+    Priority_Field.setHidden(false)
+    Source_IP.setHidden(true).setRequired(false)
+    Destination_IP.setHidden(true).setRequired(false)
+    VRF.setHidden(true).setRequired(false)
+    POD.setHidden(true).setRequired(false)
+    OneTalk_Field.setHidden(true).setRequired(false)
+    Summary_Field.setHidden(false)
+    Destination_POD.setHidden(true).setRequired(false)
+    Destination_Port.setHidden(true).setRequired(false)
+    Affects_Version.setHidden(true).setRequired(false)
+    Fix_Version.setHidden(true).setRequired(false)
+    Labels_Field.setHidden(false).setRequired(false)
+    Due_Date_Field.setHidden(true).setRequired(false)
+    Support_Case.setHidden(false).setRequired(false)
+    SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setHidden(false).setRequired(true)
+    EASILY_REPRODUCED.setHidden(false).setRequired(true)
+    OCCURS_WHEN_EXECUTED_MANUALLY.setHidden(false).setRequired(true)
+    FIRST_TIME_ISSUE_OCCURRED.setHidden(false).setRequired(true) 
+    ISSUE_START_DATE_AND_TIME.setHidden(false).setRequired(true) 
+    ISSUE_END_DATE_AND_TIME.setHidden(false).setRequired(true) 
+    FREQUENCY_OF_OCCURRENCE.setHidden(false).setRequired(true)
+    MR_Equip_List.setHidden(true).setRequired(false)
+    
+    
+    Affects_Version.setRequired(false)
+    getFieldById("issuelinks").setRequired(false)
+    OneTalk_Field.clearError()
+    Source_IP.clearError()
+    Destination_IP.clearError()
+    Support_Case.clearError()
+    
+    
+    Device_MDN.clearError()
+    Originating_Number.clearError()
+    Terminating_Number.clearError()
+    Failed_Call_Date_Time.clearError()
+    MR_Equip_List.clearError()
+    
+   
+        
+     if (issueId == null) {
+         
+         //description_field.setFormValue("DO NOT DELETE THE DATA FORMAT SHOWN BELOW.  SIMPLY ENTER THE REQUIRED INFORMATION IN THE APPROPRIATE PLACE." + " \n " +"---------------------"+ " \n " +"Description of the Issue: " + " \n " + "Date last known to be working: " + " \n " + "(If not working previously, please open an ESR via the Lab Confluence Homepage instead of submitting this trouble ticket.)" + " \n " + "Frequency the issue is reproduced? (Ex: Not working, Intermittent, Radio Failure): " + " \n " + "Is this a connectivity issue?")
+         //This is to set the component value to "Transport".  The Component ID Value for Production is [13613].  The Component ID Values for Test is [12771]
+	     description_field.setFormValue(null)
+         Component_Field.setFormValue([12771])
+         Attachment_Field.setRequired(true)
+         getFieldById(ATTACHMENT).setDescription("<div class=\"aui-message aui-message-info\"><p><b>Please attach all of the following that apply: (1) Copy of Automation Script test case inclusive of query parameters, (2) Automated test case execution results including:  PCAP, ISA, nSA, & test case logs, (3) Manual execution results summary including:  PCAP, nSA, and/or ISA, (4) Any other file to aid in troubleshooting.  At least one attachment must be provided." + "</b></div>" )
+         
+                 
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+     	}
+    
+    else {}
+    Summary_Field.setFormValue(null)
+}
+
+else if (pulltype == "Tools Issue") { 
+    
+	Device_MDN.setHidden(true).setRequired(false)
+    Originating_Number.setHidden(true).setRequired(false)
+    Terminating_Number.setHidden(true).setRequired(false)
+    Failed_Call_Date_Time.setHidden(true).setRequired(false)
+    AccessNetworkType.setHidden(true).setRequired(false)
+    Problem_Type.setHidden(true).setRequired(false)
+    Priority_Field.setHidden(false)
+    Source_IP.setHidden(true).setRequired(false)
+    Destination_IP.setHidden(true).setRequired(false)
+    VRF.setHidden(true).setRequired(false)
+    POD.setHidden(true).setRequired(false)
+    OneTalk_Field.setHidden(true).setRequired(false)
+    Summary_Field.setHidden(false)
+    Destination_POD.setHidden(true).setRequired(false)
+    Destination_Port.setHidden(true).setRequired(false)
+    Affects_Version.setHidden(true).setRequired(false)
+    Fix_Version.setHidden(true).setRequired(false)
+    Labels_Field.setHidden(false).setRequired(false)
+    Due_Date_Field.setHidden(true).setRequired(false)
+    Support_Case.setHidden(true).setRequired(false)
+    SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setHidden(true).setRequired(false)
+    EASILY_REPRODUCED.setHidden(true).setRequired(false)
+    OCCURS_WHEN_EXECUTED_MANUALLY.setHidden(true).setRequired(false)
+    FIRST_TIME_ISSUE_OCCURRED.setHidden(true).setRequired(false) 
+    ISSUE_START_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    ISSUE_END_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    FREQUENCY_OF_OCCURRENCE.setHidden(true).setRequired(false)  
+    MR_Equip_List.setHidden(true).setRequired(false)
+    
+    
+    Affects_Version.setRequired(false)
+    getFieldById("issuelinks").setRequired(false)
+    OneTalk_Field.clearError()
+    Source_IP.clearError()
+    Destination_IP.clearError()
+    Support_Case.clearError()
+    
+    
+    Device_MDN.clearError()
+    Originating_Number.clearError()
+    Terminating_Number.clearError()
+    Failed_Call_Date_Time.clearError()
+    MR_Equip_List.clearError()
+    
+    hideTab(CallProcessingTab)
+    showTab(TransportTab)
+    
+    
+     if (issueId == null) {
+         
+         //description_field.setFormValue("DO NOT DELETE THE DATA FORMAT SHOWN BELOW.  SIMPLY ENTER THE REQUIRED INFORMATION IN THE APPROPRIATE PLACE." + " \n " +"---------------------"+ " \n " +"Description of the Issue: " + " \n " + "Date last known to be working: " + " \n " + "(If not working previously, please open an ESR via the Lab Confluence Homepage instead of submitting this trouble ticket.)" + " \n " + "Frequency the issue is reproduced? (Ex: Not working, Intermittent, Radio Failure): " + " \n " + "Is this a connectivity issue?")
+         //This is to set the component value to "Transport".  The Component ID Value for Production is [13613].  The Component ID Values for Test is [12771]
+	    // description_field.setFormValue(null)
+        // Component_Field.setFormValue([12771])
+        // Attachment_Field.setRequired(true)
+       //  getFieldById(ATTACHMENT).setDescription("<div class=\"aui-message aui-message-info\"><p><b>Please Attach Data Collection Checklist : Copy of Automation Script test case (inclusive of query parameters)(or)Automated test case execution results (PCAP, ISA, nSA, test case logs)(or)Manual execution results summary (PCAP, nSA, ISA),Other" + "</b></div>" )
+         //Summary_Field.setFormValue(null)
+                 
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+         
+     	}
+    
+    else {}
+}
+    else if (pulltype == "Vendor Escort Request") { 
+
+ 
+  
+	NameofPerson.setHidden(false).setRequired(true)
+	PhoneNumber.setHidden(false).setRequired(true)
+	Email.setHidden(false).setRequired(true)
+	Vendor_Group.setHidden(false).setRequired(true)
+	Room_Rack_Location.setHidden(false).setRequired(true)
+    Access_Start_Date_Time.setHidden(false).setRequired(true)
+   	Access_End_Date_Time.setHidden(false).setRequired(true)
+    description_field.setHidden(false).setRequired(true)
+    Priority_Field.setHidden(false)
+    getFieldById("issuelinks").setRequired(false)
+    Summary_Field.setHidden(false).setRequired(false)
+    PO.setHidden(true).setRequired(false)
+	Equipment.setHidden(true).setRequired(false)
+	Preferred_Date.setHidden(true).setRequired(false)
+	Source_Location.setHidden(true).setRequired(false)
+	Destination_Location.setHidden(true).setRequired(false)
+	Install_Date.setHidden(true).setRequired(false)
+    MR_Equip_List.setHidden(true).setRequired(false)
+        
+    NameofPerson.clearError()
+	PhoneNumber.clearError()    
+    PO.clearError()
+	Equipment.clearError()
+	Source_Location.clearError()
+	Destination_Location.clearError()
+    
+        
+
+        
+    OneTalk_Field.clearError()
+    Source_IP.clearError()
+    Destination_IP.clearError()
+    Support_Case.clearError()
+    
+    
+    Device_MDN.clearError()
+    Originating_Number.clearError()
+    Terminating_Number.clearError()
+    Failed_Call_Date_Time.clearError()
+    MR_Equip_List.clearError()
+
+    
+    hideTab(CallProcessingTab)
+    showTab(TransportTab)
+        
+
+    
+    
+     if (issueId == null) {
+         
+             Component_Field.setFormValue([17202])
+			// Summary_Field.setFormValue(null)
+             description_field.setFormValue("")
+             Summary_Field.clearError()
+
+         //description_field.setFormValue("DO NOT DELETE THE DATA FORMAT SHOWN BELOW.  SIMPLY ENTER THE REQUIRED INFORMATION IN THE APPROPRIATE PLACE." + " \n " +"---------------------"+ " \n " +"Description of the Issue: " + " \n " + "Date last known to be working: " + " \n " + "(If not working previously, please open an ESR via the Lab Confluence Homepage instead of submitting this trouble ticket.)" + " \n " + "Frequency the issue is reproduced? (Ex: Not working, Intermittent, Radio Failure): " + " \n " + "Is this a connectivity issue?")
+         //This is to set the component value to "Transport".  The Component ID Value for Production is [13613].  The Component ID Values for Test is [12771]
+	    // description_field.setFormValue(null)
+        // Component_Field.setFormValue([12771])
+        // Attachment_Field.setRequired(true)
+       //  getFieldById(ATTACHMENT).setDescription("<div class=\"aui-message aui-message-info\"><p><b>Please Attach Data Collection Checklist : Copy of Automation Script test case (inclusive of query parameters)(or)Automated test case execution results (PCAP, ISA, nSA, test case logs)(or)Manual execution results summary (PCAP, nSA, ISA),Other" + "</b></div>" )
+         //Summary_Field.setFormValue(null)
+                 
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+         
+     	}
+    
+    else {}
+}
+else if (pulltype == "IP Pool Assignment Requests") { 
+
+    Priority_Field.setHidden(false).setRequired(true)
+    Summary_Field.setHidden(false).setRequired(true)
+    description_field.setHidden(false).setRequired(true)
+	assignee.setHidden(false).setRequired(false)
+ 	reporter.setHidden(false).setRequired(false) 
+ 	Attachment_Field.setHidden(false).setRequired(false)
+    Support_Case.setHidden(false).setRequired(false)
+    Vendor_Group.setHidden(false).setRequired(false)
+    Labels_Field.setHidden(false).setRequired(false)
+    Component_Field.setHidden(false).setRequired(false)
+    getFieldById("issuelinks").setHidden(false).setRequired(false)
+	Email.setHidden(true).setRequired(false)
+    PO.setHidden(true).setRequired(false)
+	Equipment.setHidden(true).setRequired(false)
+	Preferred_Date.setHidden(true).setRequired(false)
+	Source_Location.setHidden(true).setRequired(false)
+	Destination_Location.setHidden(true).setRequired(false)
+	Install_Date.setHidden(true).setRequired(false)
+        
+    Access_Start_Date_Time.setHidden(true).setRequired(false)
+    Access_End_Date_Time.setHidden(true).setRequired(false)
+    Affects_Version.setRequired(false)
+    NameofPerson.setHidden(true).setRequired(false)
+	PhoneNumber.setHidden(true).setRequired(false)
+    MR_Equip_List.setHidden(true).setRequired(false)
+    
+    NameofPerson.clearError()
+	PhoneNumber.clearError()    
+    PO.clearError()
+	Equipment.clearError()
+	Source_Location.clearError()
+	Destination_Location.clearError()
+    
+    
+    
+    OneTalk_Field.clearError()
+    Source_IP.clearError()
+    Destination_IP.clearError()
+    Support_Case.clearError()
+    
+    
+    Device_MDN.clearError()
+    Originating_Number.clearError()
+    Terminating_Number.clearError()
+    Failed_Call_Date_Time.clearError()
+    MR_Equip_List.clearError()
+    
+    hideTab(CallProcessingTab)
+    showTab(TransportTab)
+    
+    
+    
+    
+     if (issueId == null) {
+         
+     description_field.setFormValue("Could you please provide more details about these IP Pool assignments / Cable runs?" + " \n " +"-------------------------------------------"+ " \n " +"All IP Requests:" + " \n " + "What VRF do these subnets need to be in?" + " \n " + "How many pools do you need?" + " \n " + "What subnet mask do you need for each pool?" + " \n " + "Does this vlan need IPv4 or IPv6 assignments, or both?" + " \n " + "What switch does this gear hang off of? Do you have the relay rack and rack number of this switch? (We need this information in order to reserve your IP Pool from the correct space)." + " \n " + "If cable runs are required:" + " \n " + "Do you have a design document that covers the transport gear for this connectivity?" + " \n " + "What switches are you running cables to (typically covered in design document)?" + " \n " + "Do you have particular VLANs in mind, or should the lab team pick their own?" + " \n " + "What is the rack and rack unit of the gear that needs cable runs?" + " \n " + "What is the media and port numbers for the type of cable runs that you need (rj45, LC MMF, LC SMF, etc.), and what link speeds are they?")
+     Component_Field.setFormValue([17204,13004])
+     Summary_Field.clearError()
+
+         
+    // Summary_Field.setFormValue(null) 
+         //description_field.setFormValue("DO NOT DELETE THE DATA FORMAT SHOWN BELOW.  SIMPLY ENTER THE REQUIRED INFORMATION IN THE APPROPRIATE PLACE." + " \n " +"---------------------"+ " \n " +"Description of the Issue: " + " \n " + "Date last known to be working: " + " \n " + "(If not working previously, please open an ESR via the Lab Confluence Homepage instead of submitting this trouble ticket.)" + " \n " + "Frequency the issue is reproduced? (Ex: Not working, Intermittent, Radio Failure): " + " \n " + "Is this a connectivity issue?")
+         //This is to set the component value to "Transport".  The Component ID Value for Production is [13613].  The Component ID Values for Test is [12771]
+	    // description_field.setFormValue(null)
+        // Component_Field.setFormValue([12771])
+        // Attachment_Field.setRequired(true)
+       //  getFieldById(ATTACHMENT).setDescription("<div class=\"aui-message aui-message-info\"><p><b>Please Attach Data Collection Checklist : Copy of Automation Script test case (inclusive of query parameters)(or)Automated test case execution results (PCAP, ISA, nSA, test case logs)(or)Manual execution results summary (PCAP, nSA, ISA),Other" + "</b></div>" )
+         //Summary_Field.setFormValue(null)
+                 
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+         
+     	}
+    
+    else {}
+    
+    //description_field.setFormValue("")
+    
+}
+else if (pulltype == "MR/Shipping Request") { 
+
+    Preferred_Date.setHidden(false).setRequired(true)
+	Install_Date.setHidden(false).setRequired(true)
+
+    Summary_Field.setHidden(false).setRequired(false)
+  
+	NameofPerson.setHidden(false).setRequired(true)
+	PhoneNumber.setHidden(false).setRequired(true)    
+    PO.setHidden(false).setRequired(true)
+	Equipment.setHidden(false).setRequired(true)
+	Source_Location.setHidden(false).setRequired(true)
+	Destination_Location.setHidden(false).setRequired(true)
+    Email.setHidden(true).setRequired(false)
+	Vendor_Group.setHidden(true).setRequired(false)
+	Room_Rack_Location.setHidden(true).setRequired(false)       
+    Access_Start_Date_Time.setHidden(true).setRequired(false)
+    Access_End_Date_Time.setHidden(true).setRequired(false)   
+    Affects_Version.setHidden(true).setRequired(false)
+    Priority_Field.setHidden(true).setRequired(false)
+    
+    
+    NameofPerson.clearError()
+	PhoneNumber.clearError()    
+    PO.clearError()
+	//Equipment.clearError()
+	Source_Location.clearError()
+	Destination_Location.clearError()
+    
+    OneTalk_Field.clearError()
+    Source_IP.clearError()
+    Destination_IP.clearError()
+    Support_Case.clearError()
+    MR_Equip_List.setHidden(false).setRequired(true)
+    
+    
+    Device_MDN.clearError()
+    Originating_Number.clearError()
+    Terminating_Number.clearError()
+    Failed_Call_Date_Time.clearError()
+    Equipment.setDescription("<div class=\"aui-message aui-message-info\"><p><b>Please provide a complete list of the parts (including part numbers, descriptions, and quantities) of the equipment to be shipped.  Failure to provide the full list with the information requested will result in a delay of the shipment." + "</b></div>" )
+    Preferred_Date.setDescription("<div class=\"aui-message aui-message-info\"><p><b>Please provide the preferred date for delivery of this equipment.  Please note that this date MUST be at least 3 business days in the future, per CATS requirements." + "</b></div>" )
+    
+
+
+    
+    hideTab(CallProcessingTab)
+    showTab(TransportTab)
+    
+    
+     if (issueId == null) {
+         
+           Component_Field.setFormValue([17203,16800])
+		   //Summary_Field.setFormValue(null)
+           description_field.setFormValue("")
+           Summary_Field.clearError()
+         //description_field.setFormValue("DO NOT DELETE THE DATA FORMAT SHOWN BELOW.  SIMPLY ENTER THE REQUIRED INFORMATION IN THE APPROPRIATE PLACE." + " \n " +"---------------------"+ " \n " +"Description of the Issue: " + " \n " + "Date last known to be working: " + " \n " + "(If not working previously, please open an ESR via the Lab Confluence Homepage instead of submitting this trouble ticket.)" + " \n " + "Frequency the issue is reproduced? (Ex: Not working, Intermittent, Radio Failure): " + " \n " + "Is this a connectivity issue?")
+         //This is to set the component value to "Transport".  The Component ID Value for Production is [13613].  The Component ID Values for Test is [12771]
+	    // description_field.setFormValue(null)
+        // Component_Field.setFormValue([12771])
+        // Attachment_Field.setRequired(true)
+         //Summary_Field.setFormValue(null)
+                 
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+         
+     	}
+    
+    else {}
+    
+}
+
+else {
+	Device_MDN.setHidden(true).setRequired(false)
+    Originating_Number.setHidden(true).setRequired(false)
+    Terminating_Number.setHidden(true).setRequired(false)
+    Failed_Call_Date_Time.setHidden(true).setRequired(false)
+    AccessNetworkType.setHidden(true).setRequired(false)
+    Problem_Type.setHidden(true).setRequired(false)
+    Priority_Field.setHidden(false)
+    Source_IP.setHidden(true).setRequired(false)
+    Destination_IP.setHidden(true).setRequired(false)
+    VRF.setHidden(true).setRequired(false)
+    POD.setHidden(true).setRequired(false)
+    Labels_Field.setHidden(false)
+    Due_Date_Field.setHidden(false)
+    assignee.setHidden(false)
+    OneTalk_Field.setHidden(true).setRequired(false)
+    Destination_POD.setHidden(true).setRequired(false)
+    Destination_Port.setHidden(true).setRequired(false)
+    Support_Case.setHidden(false).setRequired(false)
+    SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setHidden(true).setRequired(false)
+    EASILY_REPRODUCED.setHidden(true).setRequired(false)
+    OCCURS_WHEN_EXECUTED_MANUALLY.setHidden(true).setRequired(false)
+    FIRST_TIME_ISSUE_OCCURRED.setHidden(true).setRequired(false) 
+    ISSUE_START_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    ISSUE_END_DATE_AND_TIME.setHidden(true).setRequired(false) 
+    FREQUENCY_OF_OCCURRENCE.setHidden(true).setRequired(false)
+    NameofPerson.setHidden(true).setRequired(false)
+	PhoneNumber.setHidden(true).setRequired(false)
+	Email.setHidden(true).setRequired(false)
+	ESR_Vendor_Group.setHidden(true).setRequired(false)
+	Room_Rack_Location.setHidden(true).setRequired(false)                    
+    Access_Start_Date_Time.setHidden(true).setRequired(false)
+    Access_End_Date_Time.setHidden(true).setRequired(false)
+    PO.setHidden(true).setRequired(false)
+	Equipment.setHidden(true).setRequired(false)
+	Preferred_Date.setHidden(true).setRequired(false)
+	Source_Location.setHidden(true).setRequired(false)
+	Destination_Location.setHidden(true).setRequired(false)
+	Install_Date.setHidden(true).setRequired(false)
+    Affects_Version.setRequired(true).setRequired(false)
+    MR_Equip_List.setHidden(true).setRequired(false)
+    Summary_Field.setHidden(false).setRequired(false)
+    
+    
+    Source_IP.clearError()
+    Destination_IP.clearError()
+    OneTalk_Field.clearError()
+
+    
+    Device_MDN.clearError()
+    Originating_Number.clearError()
+    Terminating_Number.clearError()
+    Failed_Call_Date_Time.clearError()
+    MR_Equip_List.clearError()
+    
+    hideTab(CallProcessingTab)
+    hideTab(TransportTab)
+    
+     
+    NameofPerson.clearError()
+	PhoneNumber.clearError()    
+    PO.clearError()
+	Equipment.clearError()
+	Source_Location.clearError()
+	Destination_Location.clearError()
+        
+    Support_Case.clearError()
+    Attachment_Field.setRequired(false)
+    getFieldById(ATTACHMENT).setDescription(null)
+    
+     if (issueId  == null) {
+        assignee.setFormValue("-1")
+        description_field.setFormValue("")
+        Component_Field.setFormValue("")
+        //Summary_Field.setFormValue(null)
+        Summary_Field.clearError()
+                 
+		/*Set Call Processing Values to null if no issue ID is populated (ie, a new record)
+        	Device_MDN.setFormValue(null)
+    		Terminating_Number.setFormValue(null)
+    		Failed_Call_Date_Time.setFormValue(null)
+         	Originating_Number.setFormValue(null)
+    		Problem_Type.setFormValue(null)
+    		AccessNetworkType.setFormValue("null,null")
+        	//OneTalk_Field.setFormValue(null)
+        	
+		//Set Transport Values to null if no issue ID is populated (ie, a new record)
+        	Source_IP.setFormValue(null)
+    		Destination_IP.setFormValue(null)
+    		VRF.setFormValue(null)
+    		POD.setFormValue(null)
+        	Destination_POD.setFormValue(null)
+    		Destination_Port.setFormValue(null)
+        
+		//Set Netscout Values to null if no issue ID is populated (ie, a new record)
+        	SPECIFIC_TO_A_SINGLE_ISSUE_CASE.setFormValue(null)
+    		EASILY_REPRODUCED.setFormValue(null)
+    		OCCURS_WHEN_EXECUTED_MANUALLY.setFormValue(null)
+    		FIRST_TIME_ISSUE_OCCURRED.setFormValue(null)
+    		ISSUE_START_DATE_AND_TIME.setFormValue(null)
+    		ISSUE_END_DATE_AND_TIME.setFormValue(null)
+    		FREQUENCY_OF_OCCURRENCE.setFormValue(null)*/
+     }
+    
+     else{}
+    
+    
+}
